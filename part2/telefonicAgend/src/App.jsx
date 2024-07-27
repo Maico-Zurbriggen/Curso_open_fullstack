@@ -1,33 +1,53 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+
+import axios from 'axios'
+
+import services from './services/persons'
 
 import Filter from './components/Filter'
 import PersonForm from './components/PersonForm'
-import Persons from './components/Persons'
+import Person from './components/Persons'
+import Notification from './components/Notification'
 
 const App = () => {
-  const [persons, setPersons] = useState([
-    { name: 'Arto Hellas', number: "040-1234567" },
-    { name: 'Ada Lovelace', number: '39-44-5323523', id: 2 },
-    { name: 'Dan Abramov', number: '12-43-234345', id: 3 },
-    { name: 'Mary Poppendieck', number: '39-23-6423122', id: 4 }
-  ])
+  const [persons, setPersons] = useState([])
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
   const [newFilter, setNewFilter] = useState('')
+  const [message, setMessage] = useState([null, null])
+
+  useEffect(() => {
+    services.getAll()
+    .then(respuesta => {setPersons(respuesta)})
+  }, [])
 
   const agregar = (event) => {
-    let bandera = true
     event.preventDefault()
-    persons.forEach(person =>{
-      if (person.name.toLowerCase() == newName.toLowerCase()){
-        bandera = false
+    if(persons.some(person => person.name.toLowerCase() == newName.toLowerCase())){
+      if(window.confirm((`${newName} is already added to phonebook, replace the old number with a new one?`))){
+        const personaModificar = persons.find(p => p.name.toLowerCase() === newName.toLowerCase())
+        services.update(personaModificar.id, {...personaModificar, number: newNumber})
+        .then(respuesta => {setPersons(persons.map(person => person.id !== personaModificar.id ? person : respuesta))
+          setMessage([`Modified ${respuesta.name}`, 'exito'])
+        })
+        .catch(error => {
+          setMessage([`Information of ${newName} has already been removed from server`, 'error'])
+          setPersons(persons.filter(person => person.name.toLowerCase() !== newName.toLowerCase()))
+        })
+        setTimeout(() => {
+          setMessage([null, null])
+        }, 5000)
       }
-    })
-    if (bandera == false){
-      alert(`${newName} is already added to phonebook`)
     }else{
-      setPersons(persons.concat({name: newName, number: newNumber}))
+      services
+      .create({name: newName, number: newNumber})
+      .then(agregado => {
+        setPersons(persons.concat(agregado))
+        setMessage([`added ${agregado.name}`, 'exito'])})
     }
+    setTimeout(() => {
+      setMessage([null, null])
+    }, 5000)
     setNewName("")
     setNewNumber("")
   }
@@ -44,6 +64,13 @@ const App = () => {
     setNewFilter(event.target.value)
   }
 
+  const eliminar = (id, name) => {
+    if(window.confirm(`¿Delete ${name}?`)){
+      services.deleted(id)
+      setPersons(persons.filter(person => person.id !== id))
+    }
+  }
+
   const personsToShow = newFilter == ''
   ? persons
   : persons.filter(person => person.name.toLowerCase().includes(newFilter))
@@ -51,11 +78,14 @@ const App = () => {
   return (
     <div>
       <h2>Phonebook</h2>
+      <Notification mensaje={message[0]} tipo={message[1]}/>
       <Filter valor={newFilter} controlador={nuevoFiltro}/>
       <h2>add a new</h2>
       <PersonForm controladorForm={agregar} estadoName={newName} estadoNum={newNumber} controladorName={nuevoNombre} controladorNum={nuevoNumero}/>
       <h2>Numbers</h2>
-      <Persons filtrado={personsToShow}/>
+      <div>
+        {personsToShow.map(person => <Person key={person.id} nombre={person.name} numero={person.number} eliminar={() => eliminar(person.id, person.name)}/>)}
+      </div>
     </div>
   )
 }
