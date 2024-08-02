@@ -21,6 +21,12 @@ const App = () => {
     .then(respuesta => {setPersons(respuesta)})
   }, [])
 
+  const wait = () => {
+    setTimeout(() => {
+      setMessage([null, null])
+    }, 5000)
+  }
+
   const agregar = (event) => {
     event.preventDefault()
     if(persons.some(person => person.name.toLowerCase() == newName.toLowerCase())){
@@ -31,12 +37,10 @@ const App = () => {
           setMessage([`Modified ${respuesta.name}`, 'exito'])
         })
         .catch(error => {
-          setMessage([`Information of ${newName} has already been removed from server`, 'error'])
-          setPersons(persons.filter(person => person.name.toLowerCase() !== newName.toLowerCase()))
+          console.log(error.response.status)
+          setMessage([`Number validation not passed`, 'error'])
         })
-        setTimeout(() => {
-          setMessage([null, null])
-        }, 5000)
+        wait()
       }
     }else{
       services
@@ -44,10 +48,12 @@ const App = () => {
       .then(agregado => {
         setPersons(persons.concat(agregado))
         setMessage([`added ${agregado.name}`, 'exito'])})
+      .catch(error => {
+        console.log(error.response.data.error)
+        setMessage([`Validation did not pass`, 'error'])
+      })
     }
-    setTimeout(() => {
-      setMessage([null, null])
-    }, 5000)
+    wait()
     setNewName("")
     setNewNumber("")
   }
