@@ -1,4 +1,4 @@
-.alerta {
+.alerta { /*Creamos un estilo para las alertas en general*/
     background: lightgrey;
     font-size: 20px;
     border-style: solid;
@@ -6,7 +6,7 @@
     padding: 10px;
     margin-bottom: 10px;
 }
-
+/*Les damos un color segun de que tipo de alerta sean*/
 .exito {
     color: green;
 }
